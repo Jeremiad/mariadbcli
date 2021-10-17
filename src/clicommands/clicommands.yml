@@ -1,0 +1,46 @@
+name: mariadbdownloader
+version: "1.0"
+about: "Tool for mariadb product handling"
+args:
+    - list:
+        long: list
+        help: List available products
+    - listreleases:
+        short: o
+        long: list_releases
+        help: List available releases for product. Takes product as argument
+        takes_value: true
+    - releaseid:
+        short: r
+        long: releaseid
+        help: Release id
+        takes_value: true
+    - product:
+        short: p
+        long: product
+        help: Name of a product
+        takes_value: true
+    - install:
+        short: i
+        long: install
+        help: Commands for installing products
+        takes_value: true
+    - download:
+        short: d
+        long: download
+        help: Download release
+        takes_value: true
+subcommands:
+    - list:
+        help: List available products
+        args:
+            - sublist:
+                short: l
+                help: List available products
+    - releaseid:
+        help: Release id
+        args:
+            - id:
+                short: kak
+                help: Input release id
+    

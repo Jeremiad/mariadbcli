@@ -1,0 +1,15 @@
+[package]
+name = "mariadbcli"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+serde = {version = "1.0", features = ["derive"]}
+prettytable-rs = {version = "*"}
+clap = {version = "*", features = ["yaml"]}
+#iced = { version = "0.3.0", default-features = false, features = ["debug"] }
+#iced_futures = { version = "0.3.0", features = ["async-std"] }
+#iced_native = { version = "0.4.0" }
