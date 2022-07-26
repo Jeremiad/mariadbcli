@@ -18,7 +18,7 @@ pub struct ProductsList {
     pub product_id: String,
     pub name: String,
     pub description: String,
-    pub license: String,
+    pub license: Option<String>,
 }
 
 //

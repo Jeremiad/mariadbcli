@@ -1,8 +1,6 @@
 extern crate clap;
 use prettytable::{Table};
 use std::env;
-use crate::api::models;
-
 use crate::api::requests;
 
 use clap::App;
@@ -29,7 +27,7 @@ pub async fn list()
     table.add_row(row!["Product id", "Product name", "License"]);
 
     for product in products.products_list {
-        table.add_row(row![product.product_id, product.name, product.license]);
+        table.add_row(row![product.product_id, product.name, product.license.unwrap_or_default()]);
     }
     println!("Products:");
     table.printstd();
