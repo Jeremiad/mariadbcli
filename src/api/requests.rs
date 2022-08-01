@@ -1,4 +1,3 @@
-#[warn(dead_code)]
 use crate::api::models;
 use prettytable::{Table};
 
