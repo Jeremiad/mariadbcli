@@ -1,0 +1,10 @@
+{
+  "response": {
+    "checksum": {
+      "md5sum": "424df7487f340fd8a9056bc43d5ec8b7",
+      "sha1sum": "08c8110231c2afd54b226c3ae9cc57adaab29afd",
+      "sha256sum": "9e565f881394d4d602f349f9ccd412a05fe7e843592a2462cd65263620507381",
+      "sha512sum": "0c942ea2f43dba5d34ce00e27dbb64c8b412e3925abb7db1c83d2304091a463b642a71d00494a2bea370314f81713eaf864c20ed3b882b1150c5ecba93149735"
+    }
+  }
+}

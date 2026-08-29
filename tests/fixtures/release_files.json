@@ -1,0 +1,75 @@
+{
+  "release_data": {
+    "10.11.6": {
+      "release_id": "10.11.6",
+      "release_name": "MariaDB Server 10.11.6",
+      "date_of_release": "2023-11-14",
+      "release_notes_url": "",
+      "change_log": "",
+      "files": [
+        {
+          "file_id": 16068,
+          "file_name": "mariadb-10.11.6-winx64.zip",
+          "package_type": "ZIP file",
+          "os": "Windows",
+          "cpu": "x86_64",
+          "checksum": {
+            "md5sum": "424df7487f340fd8a9056bc43d5ec8b7",
+            "sha1sum": null,
+            "sha256sum": "aaaabbbbccccddddeeeeffff00001111222233334444555566667777888899990"
+          },
+          "signature": null,
+          "checksum_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6-winx64.zip/checksum/",
+          "signature_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6-winx64.zip/signature/",
+          "file_download_url": "https://dlm.mariadb.com/3856433/MariaDB/mariadb-10.11.6/winx64-packages/mariadb-10.11.6-winx64.zip"
+        },
+        {
+          "file_id": 16070,
+          "file_name": "mariadb-10.11.6-winx64.msi",
+          "package_type": "MSI Package",
+          "os": "Windows",
+          "cpu": "x86_64",
+          "checksum": {
+            "md5sum": "5d41402abc4b2a76b9719d911017c592",
+            "sha1sum": null,
+            "sha256sum": "1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff"
+          },
+          "signature": null,
+          "checksum_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6-winx64.msi/checksum/",
+          "signature_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6-winx64.msi/signature/",
+          "file_download_url": "https://dlm.mariadb.com/3856433/MariaDB/mariadb-10.11.6/winx64-packages/mariadb-10.11.6-winx64.msi"
+        },
+        {
+          "file_id": 16071,
+          "file_name": "mariadb-10.11.6-winx64-debugsymbols.msi",
+          "package_type": "MSI Package",
+          "os": "Windows",
+          "cpu": "x86_64",
+          "checksum": {
+            "md5sum": "5d41402abc4b2a76b9719d911017c592",
+            "sha1sum": null,
+            "sha256sum": "1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff"
+          },
+          "signature": null,
+          "checksum_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6-winx64.msi/checksum/",
+          "signature_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6-winx64.msi/signature/",
+          "file_download_url": "https://dlm.mariadb.com/3856433/MariaDB/mariadb-10.11.6/winx64-packages/mariadb-10.11.6-winx64.msi"
+        },
+        {
+          "file_id": 16069,
+          "file_name": "mariadb-10.11.6.tar.gz",
+          "package_type": "source tar file",
+          "os": null,
+          "cpu": null,
+          "checksum": {
+            "md5sum": null
+          },
+          "signature": "-----BEGIN PGP SIGNATURE-----",
+          "checksum_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6.tar.gz/checksum/",
+          "signature_url": "https://downloads.mariadb.org/rest-api/mariadb/10.11.6/mariadb-10.11.6.tar.gz/signature/",
+          "file_download_url": "https://dlm.mariadb.com/3856433/MariaDB/mariadb-10.11.6/source/mariadb-10.11.6.tar.gz"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mirror_list": {
+    "Australia": [
+      { "mirror_id": "aarnet_pty_ltd", "mirror_name": "AARNet Pty Ltd - Brisbane" },
+      { "mirror_id": "digital-pacific", "mirror_name": "Digital Pacific - Sydney" }
+    ],
+    "Austria": [
+      { "mirror_id": "alwyzon", "mirror_name": "Alwyzon - Vienna" }
+    ]
+  }
+}

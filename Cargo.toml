@@ -2,14 +2,27 @@
 name = "mariadbcli"
 version = "0.1.0"
 edition = "2021"
+description = "CLI tool for browsing and downloading MariaDB products via the MariaDB Downloads REST API"
+repository = "https://github.com/Jeremiad/mariadbcli"
+license = "MIT"
 
 [dependencies]
-reqwest = { version = "0.11", features = ["json"] }
-tokio = { version = "1.24", features = ["full"] }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-serde = {version = "1.0", features = ["derive"]}
-prettytable-rs = {version = "*"}
-clap = {version = "*", features = ["yaml"]}
-#iced = { version = "0.3.0", default-features = false, features = ["debug"] }
-#iced_futures = { version = "0.3.0", features = ["async-std"] }
-#iced_native = { version = "0.4.0" }
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+prettytable-rs = "0.10"
+reqwest = "0.11"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tokio = { version = "1.24", features = ["rt", "macros", "fs", "io-util"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Threading",
+] }
