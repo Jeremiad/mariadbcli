@@ -1,0 +1,174 @@
+name: Release
+
+# Tagging is the trigger: `git tag v0.2.0 && git push origin v0.2.0` verifies the
+# tree, builds a binary per platform, and publishes them on a GitHub release.
+on:
+  push:
+    tags:
+      - "v*"
+
+# Granted per job instead of here, so only the job that publishes can write.
+permissions: {}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Nothing is built until the tree passes the same gate as a normal push, and
+  # until the tag agrees with the version it claims to be.
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag matches the crate version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          crate=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          if [ "$tag" != "$crate" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} claims version ${tag}, but Cargo.toml says ${crate}"
+            exit 1
+          fi
+          echo "Releasing ${crate}"
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo test --locked
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: verify
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      # Both needed to sign the provenance attestation below.
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      # A release binary is worth a smoke test: this proves it links and runs on
+      # the platform it was built for, without needing the network.
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            bin="target/${{ matrix.target }}/release/mariadbcli.exe"
+          else
+            bin="target/${{ matrix.target }}/release/mariadbcli"
+          fi
+          "$bin" --version
+          "$bin" --help > /dev/null
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="mariadbcli-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir "$name"
+
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            cp "target/${{ matrix.target }}/release/mariadbcli.exe" "$name/"
+          else
+            cp "target/${{ matrix.target }}/release/mariadbcli" "$name/"
+            strip "$name/mariadbcli" || true
+          fi
+
+          cp README.md LICENSE "$name/"
+
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a -bso0 "${name}.zip" "$name"
+          else
+            tar czf "${name}.tar.gz" "$name"
+          fi
+
+          # Published alongside each archive so a download can be checked the
+          # same way this tool checks MariaDB's own.
+          sha256sum "${name}.${{ matrix.archive }}" > "${name}.${{ matrix.archive }}.sha256"
+          cat "${name}.${{ matrix.archive }}.sha256"
+
+      # Records where and from what commit the archive was built, so anyone can
+      # confirm it came from this workflow:
+      #   gh attestation verify <archive> --repo ${{ github.repository }}
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            mariadbcli-*.tar.gz
+            mariadbcli-*.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mariadbcli-${{ matrix.target }}
+          path: |
+            mariadbcli-*.tar.gz
+            mariadbcli-*.zip
+            mariadbcli-*.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List what will be published
+        run: ls -lh artifacts
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # A tag with a suffix (v0.2.0-rc1) is a prerelease; a plain one is not.
+          prerelease=""
+          case "${GITHUB_REF_NAME}" in
+            *-*) prerelease="--prerelease" ;;
+          esac
+
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "mariadbcli ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag \
+            $prerelease \
+            artifacts/*

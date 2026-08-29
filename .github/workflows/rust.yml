@@ -15,9 +15,168 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - name: Check formatting
+      run: cargo fmt --all --check
+    - name: Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
     - name: Build
       run: cargo build --verbose
-# No tests atm
-#    - name: Run tests
-#      run: cargo test --verbose
+    - name: Run tests
+      run: cargo test --verbose
+
+  # `install` is the only command that writes outside the working directory, and
+  # it cannot be exercised on the developer machine (Windows) or on the plain
+  # runner, whose /etc/os-release is always Ubuntu. Running --dry-run inside real
+  # distribution images tests what the unit tests deliberately stub out: reading
+  # the actual /etc/os-release, and whether the repository URL that produces
+  # exists upstream. No --os-release override here on purpose.
+  install-dry-run:
+    name: install --dry-run (${{ matrix.name }})
+
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # libc6-dev is what makes linking work: `gcc` only Recommends it, and
+          # --no-install-recommends drops it, leaving rustc unable to find
+          # Scrt1.o and -lc. bash is requested explicitly because the steps below
+          # ask for it rather than the `sh` the runner defaults to in containers.
+          - name: ubuntu 24.04
+            image: ubuntu:24.04
+            apt: true
+            setup: >-
+              apt-get update &&
+              apt-get install -y --no-install-recommends
+              bash ca-certificates curl gcc git libc6-dev libssl-dev pkg-config
+            expect: /etc/apt/sources.list.d/mariadb.sources
+          - name: debian 12
+            image: debian:12
+            apt: true
+            setup: >-
+              apt-get update &&
+              apt-get install -y --no-install-recommends
+              bash ca-certificates curl gcc git libc6-dev libssl-dev pkg-config
+            expect: /etc/apt/sources.list.d/mariadb.sources
+          - name: rocky 9
+            image: quay.io/rockylinux/rockylinux:9
+            apt: false
+            setup: >-
+              dnf install -y
+              bash gcc git glibc-devel openssl-devel pkgconf-pkg-config
+            expect: /etc/yum.repos.d/mariadb.repo
+
+    # Rust is installed to a fixed location and invoked by absolute path.
+    # Appending to $GITHUB_PATH instead left the Rocky container unable to find
+    # even `sh` in the following step.
+    env:
+      CARGO_HOME: /usr/local/cargo
+      RUSTUP_HOME: /usr/local/rustup
+
+    steps:
+    - name: Install build prerequisites
+      run: ${{ matrix.setup }}
+
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+          sh -s -- -y --profile minimal --no-modify-path
+
+    - name: Build
+      run: /usr/local/cargo/bin/cargo build --locked
+
+    - name: Plan an install for the detected distribution
+      shell: bash
+      run: |
+        set -o pipefail
+        ./target/debug/mariadbcli install --dry-run 2>&1 | tee plan.txt
+
+    - name: Plan targets the right repository file
+      shell: bash
+      run: grep -qF '${{ matrix.expect }}' plan.txt
+
+    - name: Generated repository URL exists upstream
+      shell: bash
+      run: grep -qF 'Repository verified.' plan.txt
+
+    - name: Detected distribution matches the image
+      shell: bash
+      run: grep -qF "$(. /etc/os-release && echo "$PRETTY_NAME")" plan.txt
+
+    - name: One-line apt format targets mariadb.list
+      if: matrix.apt
+      shell: bash
+      run: |
+        set -o pipefail
+        ./target/debug/mariadbcli install --dry-run --list-format 2>&1 | tee list.txt
+        grep -qF '/etc/apt/sources.list.d/mariadb.list' list.txt
+        grep -qF 'Repository verified.' list.txt
+
+    - name: Dry run changed nothing
+      shell: bash
+      run: |
+        for path in /etc/apt/sources.list.d/mariadb.sources \
+                    /etc/apt/sources.list.d/mariadb.list \
+                    /etc/apt/keyrings/mariadb-keyring.gpg \
+                    /etc/yum.repos.d/mariadb.repo; do
+          if [ -e "$path" ]; then
+            echo "--dry-run wrote $path"
+            exit 1
+          fi
+        done
+
+  # The Windows half of `install` picks an MSI out of the downloads API and
+  # hands it to msiexec. Actually running the installer is not something CI
+  # should do, but everything up to that point is checked here.
+  install-dry-run-windows:
+    name: install --dry-run (windows)
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build
+      run: cargo build --locked
+
+    - name: Plan an install for the newest stable release
+      shell: bash
+      run: |
+        set -o pipefail
+        ./target/debug/mariadbcli.exe install --dry-run 2>&1 | tee plan.txt
+
+    - name: Plan selects the winx64 installer
+      shell: bash
+      run: |
+        grep -qE 'Package: +mariadb-[0-9.]+-winx64\.msi' plan.txt
+        grep -qF 'Target:          Windows (x86_64)' plan.txt
+
+    - name: Plan carries a sha256 to verify against
+      shell: bash
+      run: grep -qE '^  [0-9a-f]{64}$' plan.txt
+
+    - name: Plan runs msiexec silently and without rebooting
+      shell: bash
+      run: |
+        grep -qF 'msiexec /i ' plan.txt
+        grep -qF 'SERVICENAME=MariaDB' plan.txt
+        grep -qF '/qn' plan.txt
+        grep -qF '/norestart' plan.txt
+
+    - name: Password never appears in a plan
+      shell: bash
+      run: |
+        set -o pipefail
+        ./target/debug/mariadbcli.exe install --password hunter2 --dry-run 2>&1 | tee pw.txt
+        if grep -qF 'hunter2' pw.txt; then echo 'password leaked into the plan'; exit 1; fi
+        grep -qF 'PASSWORD=***' pw.txt
+
+    # Deliberately not tested here: that a real install refuses without
+    # elevation. Hosted Windows runners are already elevated, so the check would
+    # pass and msiexec would install MariaDB onto the runner. Every CI
+    # invocation of `install` must therefore carry --dry-run.

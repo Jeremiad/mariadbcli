@@ -1,0 +1,14 @@
+{
+  "major_releases": [
+    {
+      "release_id": "10.11",
+      "release_name": "MariaDB Server 10.11",
+      "release_status": "Stable"
+    },
+    {
+      "release_id": "11.4",
+      "release_name": "MariaDB Server 11.4",
+      "release_status": "Stable"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "os_list": [
+    { "os_id": "deb_package", "os_name": "DEB Package" },
+    { "os_id": "linux_generic", "os_name": "Generic Linux" },
+    { "os_id": "rpm_package", "os_name": "RPM Package" },
+    { "os_id": "source", "os_name": "Source Code" },
+    { "os_id": "windows", "os_name": "Windows" }
+  ]
+}

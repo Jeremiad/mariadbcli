@@ -1,0 +1,16 @@
+{
+  "products_list": [
+    {
+      "product_id": "documentation",
+      "name": "Documentation",
+      "description": "MariaDB Documentation",
+      "license": null
+    },
+    {
+      "product_id": "mariadb",
+      "name": "MariaDB Server",
+      "description": "MariaDB Server is one of the most popular database servers in the world.",
+      "license": "GPL"
+    }
+  ]
+}

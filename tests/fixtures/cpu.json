@@ -1,0 +1,8 @@
+{
+  "architecture_list": [
+    { "architecture_id": "amd64", "architecture_name": "x86_64" },
+    { "architecture_id": "x86_32", "architecture_name": "x86" },
+    { "architecture_id": "ppc64le", "architecture_name": "ppc64le" },
+    { "architecture_id": "blank", "architecture_name": " " }
+  ]
+}
