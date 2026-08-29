@@ -1,0 +1,16 @@
+# Line endings are declared here rather than left to each contributor's
+# core.autocrlf, so a Windows working tree holds the same bytes CI reads on
+# Linux. Without this, Git warns on every add and the two can drift apart.
+
+# Everything in the repository is text: store LF, and check out LF everywhere.
+* text=auto eol=lf
+
+# These are parsed byte for byte by the install planner, and are real
+# /etc/os-release files on the Linux images CI runs in, so their endings matter
+# more than most. Covered by the rule above; stated so it is not lost if it changes.
+tests/fixtures/** text eol=lf
+
+# Scripts Windows itself runs are the exception: cmd.exe wants CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
