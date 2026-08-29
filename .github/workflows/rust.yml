@@ -41,13 +41,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # libc6-dev is what makes linking work: `gcc` only Recommends it, and
+          # --no-install-recommends drops it, leaving rustc unable to find
+          # Scrt1.o and -lc. bash is requested explicitly because the steps below
+          # ask for it rather than the `sh` the runner defaults to in containers.
           - name: ubuntu 24.04
             image: ubuntu:24.04
             apt: true
             setup: >-
               apt-get update &&
               apt-get install -y --no-install-recommends
-              ca-certificates curl gcc git libssl-dev pkg-config
+              bash ca-certificates curl gcc git libc6-dev libssl-dev pkg-config
             expect: /etc/apt/sources.list.d/mariadb.sources
           - name: debian 12
             image: debian:12
@@ -55,13 +59,22 @@ jobs:
             setup: >-
               apt-get update &&
               apt-get install -y --no-install-recommends
-              ca-certificates curl gcc git libssl-dev pkg-config
+              bash ca-certificates curl gcc git libc6-dev libssl-dev pkg-config
             expect: /etc/apt/sources.list.d/mariadb.sources
           - name: rocky 9
             image: quay.io/rockylinux/rockylinux:9
             apt: false
-            setup: dnf install -y gcc git openssl-devel pkgconf-pkg-config
+            setup: >-
+              dnf install -y
+              bash gcc git glibc-devel openssl-devel pkgconf-pkg-config
             expect: /etc/yum.repos.d/mariadb.repo
+
+    # Rust is installed to a fixed location and invoked by absolute path.
+    # Appending to $GITHUB_PATH instead left the Rocky container unable to find
+    # even `sh` in the following step.
+    env:
+      CARGO_HOME: /usr/local/cargo
+      RUSTUP_HOME: /usr/local/rustup
 
     steps:
     - name: Install build prerequisites
@@ -71,28 +84,33 @@ jobs:
 
     - name: Install Rust
       run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+          sh -s -- -y --profile minimal --no-modify-path
 
     - name: Build
-      run: cargo build --locked
+      run: /usr/local/cargo/bin/cargo build --locked
 
     - name: Plan an install for the detected distribution
+      shell: bash
       run: |
         set -o pipefail
         ./target/debug/mariadbcli install --dry-run 2>&1 | tee plan.txt
 
     - name: Plan targets the right repository file
+      shell: bash
       run: grep -qF '${{ matrix.expect }}' plan.txt
 
     - name: Generated repository URL exists upstream
+      shell: bash
       run: grep -qF 'Repository verified.' plan.txt
 
     - name: Detected distribution matches the image
+      shell: bash
       run: grep -qF "$(. /etc/os-release && echo "$PRETTY_NAME")" plan.txt
 
     - name: One-line apt format targets mariadb.list
       if: matrix.apt
+      shell: bash
       run: |
         set -o pipefail
         ./target/debug/mariadbcli install --dry-run --list-format 2>&1 | tee list.txt
@@ -100,6 +118,7 @@ jobs:
         grep -qF 'Repository verified.' list.txt
 
     - name: Dry run changed nothing
+      shell: bash
       run: |
         for path in /etc/apt/sources.list.d/mariadb.sources \
                     /etc/apt/sources.list.d/mariadb.list \
